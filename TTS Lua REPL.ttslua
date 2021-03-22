@@ -1,0 +1,178 @@
+-- Solarized color scheme by Ethan Schoonover
+-- https://ethanschoonover.com/solarized/
+-- https://github.com/altercation/solarized
+
+-- Associations from the vim colorscheme
+-- https://github.com/altercation/solarized/blob/master/vim-colors-solarized/colors/solarized.vim
+
+-- These values are for light mode.
+-- For dark mode, just use them in inverse order, or use the solarized_gray function below.
+-- For highlighted (e.g. selected) text, just use one line up for both foreground & background.
+
+solarized_grays = {
+ {r=0,g=43,b=54},     -- base03
+ {r=7,g=54,b=66},     -- base02
+ {r=88,g=110,b=117},  -- base01  optional emphasized content
+ {r=101,g=123,g=131}, -- base00  body text / default code / primary content
+ {r=131,g=148,g=150}, -- base0
+ {r=147,g=161,b=161}, -- base1   comments / secondary content
+ {r=238,g=232,b=213}, -- base2   background highlights
+ {r=253,g=246,b=227}  -- base3   background
+}
+
+-- contrast is an int from 1 to 8; 1 = background, 8 = most salient, 5 = default text
+   -- Yes, this is 1 based, like Lua, though it hurts me to do so and conflicts w/ Solarized's naming. Lua sucks. :(
+-- dark_mode is a boolean; true = light text on dark background, false = dark text on light background
+-- returns an rgb color vector suitable for passing to TTS functions that want colors
+function solarized_gray(contrast, dark_mode)
+  if contrast >= 1 and contrast <= 8 then
+    if dark_mode then
+      return solarized_grays[9-contrast]
+    else
+      return solarized_grays[contrast]
+    end
+  else
+    error("solarized_gray requires contrast from 1 to 8, but was called with " .. contrast)
+  end
+end
+
+
+solarized_colors = {
+ ["yellow"] = {r=181,g=137,b=0},
+ ["orange"] = {r=203,g=75,b=22},
+ ["red"] = {r=220,g=50,b=47},
+ ["magenta"] = {r=221,g=54,b=130},
+ ["violet"] = {r=108,g=113,b=196},
+ ["blue"] = {r=38,g=139,b=210},
+ ["cyan"] = {r=42,g=161,b=152},
+ ["green"] = {r=133,g=153,b=0}
+}
+
+
+function updateSave()
+  local data_to_save = {}
+  saved_data = JSON.encode(data_to_save)
+  self.script_state = saved_data
+  return saved_data
+end
+
+function onSave()
+  saved_data = updateSave()
+  return saved_data
+end
+
+function onLoad(saved_data)
+  if saved_data ~= "" then
+    loaded_data = JSON.decode(saved_data)
+  else
+    -- do some default
+  end
+  -- NOTE: The UI for this is created using https://api.tabletopsimulator.com/ui/introUI/ because it allows more flexibility, e.g. for code formatting, then is possible via createInput().
+  -- It's loaded into the *global* setXml, not the *object* setXml, so that it appears as a UI element on the screen, rather than a thing to mess with on the table.
+  
+  -- TODO: show/hide on click; show/hide for clicking player only. Note, however, that the state is globally shared; we could try to pretend to do isolation between players, but it'd be futile, so why even pretend.
+  UI.setXml(myXML) -- TODO: merge rather than purge
+end
+
+function runREPLCode()
+  -- do stuff
+end
+
+myXML = [=[
+<Defaults>
+  <Text width="100%" height="100%" alignment="UpperLeft" allowDragging="false" rectAlignment="UpperLeft" horizontalOverflow="wrap" verticalOverflow="truncate" color="#839496" />
+  <InputField width="100%" height="100%" alignment="UpperLeft" allowDragging="false" rectAlignment="UpperLeft" horizontalOverflow="wrap" verticalOverflow="truncate" lineType="MultiLineNewLine" caretColor="#073642" selectionColor="#073642" colors="#002b36" textColor="#839496" />
+
+  <!-- panel padding is necessary to prevent contents from overflowing the container -->
+  <Panel height="100%" width="100%" rectAlignment="UpperLeft" allowDragging="false" returnToOriginalPositionWhenReleased="false" color="#002b36" padding="1 1 1 1" />
+  
+  <VerticalLayout height="100%" width="100%" spacing="5" rectAlignment="UpperLeft" allowDragging="false" returnToOriginalPositionWhenReleased="false" color="#002b36" />
+  <VerticalScrollView height="100%" width="100%" spacing="5" rectAlignment="UpperLeft" allowDragging="false" returnToOriginalPositionWhenReleased="false" color="#002b36" />
+</Defaults>
+
+<Panel
+  id="TTSLuaREPL"
+  class="TTSLuaREPL"
+  height="400"
+  width="500"
+  rectAlignment="MiddleLeft"
+  allowDragging="true"
+  hideAnimation="SlideOut_Left"
+  returnToOriginalPositionWhenReleased="false"
+  showAnimation="SlideIn_Left"
+  color="#586e75"
+>
+  <VerticalLayout
+    color="#93a1a1"
+    childForceExpandHeight="false"
+    >
+    <Panel
+      anchorMax="1 1"
+      offsetMax="0 0"
+      flexibleHeight="0" <!-- this is necessary to prevent it from being 30-30-30; TTS does not respect the height variable -->
+      >
+      <Text
+        class="Title"
+        alignment="LowerCenter"
+        color="#cb4b16"
+        >TTS Lua REPL
+      </Text>
+    </Panel>
+    <Panel
+      height="75%"   <!-- note: I have not yet figured out how to make TTS respect this; for now, it's 50-50 between the history and the input. oh well. send a pull request if you make it work. -->
+      flexibleHeight="1"
+      >
+      <VerticalScrollView
+        color="#eee8d5"
+        >
+        <VerticalLayout
+          color="#fdf6e3"
+          childForceExpandHeight="false"
+          >
+          <Panel
+            padding="5 5 5 5"
+            flexibleHeight="0"
+            >
+            <Text
+              >Some other stuff
+            </Text>
+          </Panel>
+          <Panel
+            padding="5 5 5 5"
+            flexibleHeight="0"
+            >
+            <Text
+              ><![CDATA[
+function solarized_gray(contrast, dark_mode)
+  if contrast >= 1 and contrast <= 8 then
+    if dark_mode then
+      return solarized_grays[9-contrast]
+    else
+      return solarized_grays[contrast]
+    end
+  else
+    error("solarized_gray requires contrast from 1 to 8, but was called with " .. contrast)
+  end
+end
+]]>
+            </Text>
+          </Panel>
+        </VerticalLayout>
+      </VerticalScrollView>
+    </Panel>
+    <Panel
+      height="25%"
+      flexibleHeight="1"
+      rectAlignment="LowerLeft"
+      anchorMin="0 0"
+      offsetMin="0 0"
+      >
+      <InputField
+        placeholder="type Lua code here, end it with ;;"
+        onValueChanged="runREPLCode"
+        >
+      </InputField>
+    </Panel>
+  </VerticalLayout>
+</Panel>
+]=]
